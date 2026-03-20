@@ -1,11 +1,13 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../theme/app_theme.dart';
 
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
@@ -19,7 +21,7 @@ class _UploadPageState extends State<UploadPage> {
   int? _pageCount;
   double? _cost;
   bool _isProcessing = false;
-  File? _selectedFile;
+  Uint8List? _fileBytes;
 
   final NumberFormat _currencyFormat = NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0);
 
@@ -35,11 +37,11 @@ class _UploadPageState extends State<UploadPage> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
+        withData: true, // Required for web to get bytes
       );
 
-      if (result != null) {
-        final file = File(result.files.single.path!);
-        final bytes = await file.readAsBytes();
+      if (result != null && result.files.single.bytes != null) {
+        final bytes = result.files.single.bytes!;
         
         // Use syncfusion_flutter_pdf to count pages
         final PdfDocument document = PdfDocument(inputBytes: bytes);
@@ -47,7 +49,7 @@ class _UploadPageState extends State<UploadPage> {
         document.dispose();
 
         setState(() {
-          _selectedFile = file;
+          _fileBytes = bytes;
           _fileName = result.files.single.name;
           _pageCount = pages;
           _cost = pages * 100.0;
@@ -65,7 +67,7 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   Future<void> _submitJob() async {
-    if (_selectedFile == null) return;
+    if (_fileBytes == null) return;
 
     setState(() => _isProcessing = true);
     try {
@@ -75,7 +77,9 @@ class _UploadPageState extends State<UploadPage> {
       // 1. Upload file to Firebase Storage
       final String storagePath = 'documents/user_${user.uid}/${DateTime.now().millisecondsSinceEpoch}_$_fileName';
       final ref = FirebaseStorage.instance.ref().child(storagePath);
-      await ref.putFile(_selectedFile!);
+      
+      // Use putData for web compatibility
+      await ref.putData(_fileBytes!);
       final String downloadUrl = await ref.getDownloadURL();
       
       // 2. Save metadata to Cloud Firestore
@@ -98,7 +102,7 @@ class _UploadPageState extends State<UploadPage> {
           _fileName = null;
           _pageCount = null;
           _cost = null;
-          _selectedFile = null;
+          _fileBytes = null;
         });
       }
     } catch (e) {
@@ -119,102 +123,152 @@ class _UploadPageState extends State<UploadPage> {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Upload Document',
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontSize: 28,
-                    color: const Color(0xFF0D47A1),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Select a PDF file to calculate printing costs.',
-                  style: TextStyle(color: const Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 32),
-                if (_fileName == null)
-                  _buildUploadArea()
-                else
-                  _buildFilePreview(),
-                const SizedBox(height: 32),
-                if (_isProcessing)
-                  const Center(child: CircularProgressIndicator())
-                else
-                  ElevatedButton.icon(
-                    onPressed: _fileName == null ? _pickFile : _submitJob,
-                    icon: Icon(_fileName == null ? Icons.upload_file : Icons.print_rounded),
-                    label: Text(_fileName == null ? 'Select PDF' : 'Confirm & Print'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      backgroundColor: _fileName == null 
-                          ? Theme.of(context).colorScheme.primary 
-                          : Colors.green.shade700,
-                    ),
-                  ),
-                if (_fileName != null && !_isProcessing)
-                  TextButton(
-                    onPressed: _pickFile,
-                    child: const Text('Change Document'),
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context),
+              const SizedBox(height: 32),
+              _buildUploadCard(context),
+              if (_fileName != null) ...[
+                const SizedBox(height: 24),
+                _buildFileDetailsCard(context),
               ],
-            ),
+              const SizedBox(height: 32),
+              _buildActionButtons(context),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildUploadArea() {
+  Widget _buildHeader(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'New Print Job',
+          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                fontSize: 28,
+                color: AppTheme.primaryColor,
+              ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Upload your PDF and we\'ll handle the rest.',
+          style: TextStyle(color: Color(0xFF64748B), fontSize: 16),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUploadCard(BuildContext context) {
     return GestureDetector(
-      onTap: _pickFile,
-      child: Container(
-        height: 250,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 2,
-            style: BorderStyle.solid, // Dash effect not built-in, using solid for now
+      onTap: _fileName == null ? _pickFile : null,
+      child: Card(
+        child: Container(
+          width: double.infinity,
+          height: 240,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: _fileName == null
+                ? Border.all(color: AppTheme.primaryColor.withOpacity(0.2), width: 2)
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _fileName == null ? LucideIcons.uploadCloud : LucideIcons.fileText,
+                  size: 48,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                _fileName ?? 'Click to browse files',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _fileName == null ? 'PDF files only • Max 50MB' : 'Document selected',
+                style: const TextStyle(color: Color(0xFF64748B)),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFileDetailsCard(BuildContext context) {
+    return Card(
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D47A1).withOpacity(0.05),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.cloud_upload_outlined,
-                size: 48,
-                color: Color(0xFF0D47A1),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Click to browse files',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1E293B),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'PDF files only • Max 50MB',
-              style: TextStyle(color: Color(0xFF64748B)),
-            ),
+            _buildDetailRow('Page Count', '$_pageCount pages', LucideIcons.layers),
+            const Divider(height: 32),
+            _buildDetailRow('Estimated Cost', _currencyFormat.format(_cost), LucideIcons.creditCard),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: const Color(0xFF64748B)),
+        const SizedBox(width: 12),
+        Text(label, style: const TextStyle(color: Color(0xFF64748B))),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    if (_isProcessing) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _fileName == null ? _pickFile : _submitJob,
+          icon: Icon(_fileName == null ? LucideIcons.plus : LucideIcons.printer),
+          label: Text(_fileName == null ? 'Select Document' : 'Submit Job'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            backgroundColor: AppTheme.primaryColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
+        if (_fileName != null) ...[
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: _pickFile,
+            child: const Text('Cancel & Select Different File', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ],
     );
   }
 

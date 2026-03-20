@@ -69,10 +69,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(
-                      Icons.print_rounded,
-                      size: 64,
-                      color: Color(0xFF0D47A1),
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 80,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 80,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D47A1).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.print_rounded, color: Color(0xFF0D47A1), size: 40),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Text(

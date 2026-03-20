@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../theme/app_theme.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -12,29 +14,22 @@ class SettingsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Settings',
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontSize: 28,
-                    color: const Color(0xFF0D47A1),
-                  ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Manage your preferences and app settings.',
-              style: TextStyle(color: Color(0xFF64748B)),
-            ),
+            _buildHeader(context),
             const SizedBox(height: 32),
-            _buildSettingsSection(context, [
-              _buildSettingsItem(Icons.palette_outlined, 'Theme Mode', 'Light / Dark'),
-              _buildSettingsItem(Icons.notifications_none_rounded, 'Notifications', 'Enabled'),
-              _buildSettingsItem(Icons.language_rounded, 'Language', 'English'),
+            _buildSettingsCategory(context, 'General', [
+              _buildSettingsItem(context, LucideIcons.palette, 'Theme Mode', 'Light / Dark'),
+              _buildSettingsItem(context, LucideIcons.bell, 'Notifications', 'Enabled'),
+              _buildSettingsItem(context, LucideIcons.globe, 'Language', 'English'),
             ]),
-            const SizedBox(height: 24),
-            _buildSettingsSection(context, [
-              _buildSettingsItem(Icons.security_rounded, 'Security', 'Password & Biometrics'),
-              _buildSettingsItem(Icons.help_outline_rounded, 'Help & Support', ''),
-              _buildSettingsItem(Icons.info_outline_rounded, 'About AutoPrint', 'v1.0.0'),
+            const SizedBox(height: 32),
+            _buildSettingsCategory(context, 'Privacy & Security', [
+              _buildSettingsItem(context, LucideIcons.shield, 'Security', 'Password & Biometrics'),
+              _buildSettingsItem(context, LucideIcons.eye, 'Privacy Policy', ''),
+            ]),
+            const SizedBox(height: 32),
+            _buildSettingsCategory(context, 'Support', [
+              _buildSettingsItem(context, LucideIcons.helpCircle, 'Help & Support', ''),
+              _buildSettingsItem(context, LucideIcons.info, 'About AutoPrint', 'v1.0.0'),
             ]),
           ],
         ),
@@ -42,20 +37,68 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsSection(BuildContext context, List<Widget> items) {
-    return Card(
-      child: Column(
-        children: items,
-      ),
+  Widget _buildHeader(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Settings',
+          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                fontSize: 28,
+                color: AppTheme.primaryColor,
+              ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Manage your preferences and app configurations.',
+          style: TextStyle(color: Color(0xFF64748B), fontSize: 16),
+        ),
+      ],
     );
   }
 
-  Widget _buildSettingsItem(IconData icon, String title, String value) {
+  Widget _buildSettingsCategory(BuildContext context, String title, List<Widget> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF64748B),
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        Card(
+          child: Column(
+            children: items,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingsItem(BuildContext context, IconData icon, String title, String value) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF0D47A1), size: 22),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+      ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w500),
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textColor,
+          fontSize: 15,
+        ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -66,10 +109,11 @@ class SettingsPage extends StatelessWidget {
               style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
             ),
           const SizedBox(width: 8),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFFE2E8F0)),
+          const Icon(LucideIcons.chevronRight, size: 16, color: Color(0xFFE2E8F0)),
         ],
       ),
       onTap: () {},
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }

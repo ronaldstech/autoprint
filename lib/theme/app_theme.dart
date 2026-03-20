@@ -64,6 +64,25 @@ class AppTheme {
         ),
         color: surfaceColor,
       ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: surfaceColor,
+        selectedIconTheme: const IconThemeData(color: primaryColor),
+        unselectedIconTheme: const IconThemeData(color: Color(0xFF64748B)),
+        selectedLabelTextStyle: GoogleFonts.outfit(
+          color: primaryColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        unselectedLabelTextStyle: GoogleFonts.outfit(
+          color: const Color(0xFF64748B),
+          fontWeight: FontWeight.normal,
+          fontSize: 14,
+        ),
+        indicatorColor: primaryColor.withOpacity(0.08),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 }
