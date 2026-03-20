@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyCgzyilhI4-m8MYhyZTNuOikpatmvIh5cY</string>
+	<key>GCM_SENDER_ID</key>
+	<string>303768360347</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.autoprint</string>
+	<key>PROJECT_ID</key>
+	<string>autoprint-7f97c</string>
+	<key>STORAGE_BUCKET</key>
+	<string>autoprint-7f97c.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:303768360347:ios:e4dd8b4ae9f4d8d8537d3e</string>
+	<key>DATABASE_URL</key>
+	<string>https://autoprint-7f97c-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>

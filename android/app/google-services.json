@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "303768360347",
+    "firebase_url": "https://autoprint-7f97c-default-rtdb.firebaseio.com",
+    "project_id": "autoprint-7f97c",
+    "storage_bucket": "autoprint-7f97c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:303768360347:android:ec875e81c19dc115537d3e",
+        "android_client_info": {
+          "package_name": "com.example.autoprint"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAa8vsYa5gJOYU1skSz865aKjgE2C3T5qo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:303768360347:android:79b97c5e7610d0ee537d3e",
+        "android_client_info": {
+          "package_name": "com.example.autoprintpc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAa8vsYa5gJOYU1skSz865aKjgE2C3T5qo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
