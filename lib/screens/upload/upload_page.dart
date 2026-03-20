@@ -115,70 +115,52 @@ class _UploadPageState extends State<UploadPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Print Job')),
+      backgroundColor: Colors.transparent,
       body: Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_fileName == null) ...[
-                  const Icon(Icons.picture_as_pdf, size: 80, color: Colors.blueGrey),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Select a PDF to Print',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                Text(
+                  'Upload Document',
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    fontSize: 28,
+                    color: const Color(0xFF0D47A1),
                   ),
-                  const SizedBox(height: 8),
-                  const Text('Rate: 100 per page', style: TextStyle(color: Colors.grey)),
-                ] else ...[
-                  const Icon(Icons.check_circle, size: 80, color: Colors.green),
-                  const SizedBox(height: 24),
-                  Text(
-                    _fileName!,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          _buildInfoRow('Number of Pages', '$_pageCount'),
-                          const Divider(),
-                          _buildInfoRow('Total Cost', _currencyFormat.format(_cost)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 40),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Select a PDF file to calculate printing costs.',
+                  style: TextStyle(color: const Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 32),
+                if (_fileName == null)
+                  _buildUploadArea()
+                else
+                  _buildFilePreview(),
+                const SizedBox(height: 32),
                 if (_isProcessing)
-                  const CircularProgressIndicator()
-                else ...[
+                  const Center(child: CircularProgressIndicator())
+                else
                   ElevatedButton.icon(
-                    onPressed: _pickFile,
-                    icon: const Icon(Icons.file_upload),
-                    label: Text(_fileName == null ? 'Select PDF' : 'Change PDF'),
+                    onPressed: _fileName == null ? _pickFile : _submitJob,
+                    icon: Icon(_fileName == null ? Icons.upload_file : Icons.print_rounded),
+                    label: Text(_fileName == null ? 'Select PDF' : 'Confirm & Print'),
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(200, 50),
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      backgroundColor: _fileName == null 
+                          ? Theme.of(context).colorScheme.primary 
+                          : Colors.green.shade700,
                     ),
                   ),
-                  if (_fileName != null) ...[
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _submitJob,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(200, 50),
-                      ),
-                      child: const Text('Confirm & Print'),
-                    ),
-                  ],
-                ],
+                if (_fileName != null && !_isProcessing)
+                  TextButton(
+                    onPressed: _pickFile,
+                    child: const Text('Change Document'),
+                  ),
               ],
             ),
           ),
@@ -187,12 +169,131 @@ class _UploadPageState extends State<UploadPage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildUploadArea() {
+    return GestureDetector(
+      onTap: _pickFile,
+      child: Container(
+        height: 250,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 2,
+            style: BorderStyle.solid, // Dash effect not built-in, using solid for now
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D47A1).withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.cloud_upload_outlined,
+                size: 48,
+                color: Color(0xFF0D47A1),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Click to browse files',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'PDF files only • Max 50MB',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilePreview() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _fileName!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        '${_pageCount} pages',
+                        style: const TextStyle(color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Divider(),
+            ),
+            _buildInfoRow('Price per page', 'UGX 100'),
+            const SizedBox(height: 12),
+            _buildInfoRow(
+              'Total Printing Cost',
+              _currencyFormat.format(_cost),
+              isTotal: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {bool isTotal = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 16)),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 18 : 14,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            color: isTotal ? const Color(0xFF1E293B) : const Color(0xFF64748B),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isTotal ? 20 : 16,
+            fontWeight: FontWeight.bold,
+            color: isTotal ? const Color(0xFF0D47A1) : const Color(0xFF1E293B),
+          ),
+        ),
       ],
     );
   }
