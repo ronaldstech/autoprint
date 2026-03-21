@@ -13,7 +13,20 @@
           "package_name": "com.example.autoprint"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "303768360347-bnl5a817863s1g79d407drhkg3cj6bho.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.autoprint",
+            "certificate_hash": "5204eaca20ab63c3aedef5da1cd063c9d62c7af5"
+          }
+        },
+        {
+          "client_id": "303768360347-tdu00i405kfl2c05sv4m1hkpipf4hvnl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAa8vsYa5gJOYU1skSz865aKjgE2C3T5qo"
@@ -21,7 +34,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "303768360347-tdu00i405kfl2c05sv4m1hkpipf4hvnl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "303768360347-3ru1rfav0v4b28o0uu91gbl07bvbg340.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.autoprint"
+              }
+            }
+          ]
         }
       }
     },
@@ -32,7 +57,12 @@
           "package_name": "com.example.autoprintpc"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "303768360347-tdu00i405kfl2c05sv4m1hkpipf4hvnl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAa8vsYa5gJOYU1skSz865aKjgE2C3T5qo"
@@ -40,7 +70,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "303768360347-tdu00i405kfl2c05sv4m1hkpipf4hvnl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "303768360347-3ru1rfav0v4b28o0uu91gbl07bvbg340.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.autoprint"
+              }
+            }
+          ]
         }
       }
     }

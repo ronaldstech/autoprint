@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'jobs_page.dart';
 // import 'history_page.dart'; // Removed
 import 'summary_page.dart';
@@ -21,6 +22,25 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   bool _isSidebarCollapsed = false;
+
+  late final Stream<int> _pendingJobsCountStream;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _pendingJobsCountStream = FirebaseFirestore.instance
+          .collection('print_jobs')
+          .where('user_id', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'pending')
+          .where('payment_status', isEqualTo: 'paid')
+          .snapshots()
+          .map((snapshot) => snapshot.docs.length);
+    } else {
+      _pendingJobsCountStream = Stream.value(0);
+    }
+  }
 
   final List<({IconData icon, String label})> _destinations = [
     (icon: LucideIcons.layoutDashboard, label: 'Dashboard'),
@@ -436,34 +456,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Row(
-            mainAxisAlignment: isCollapsed
-                ? MainAxisAlignment.center
-                : MainAxisAlignment.start,
-            children: [
-              Icon(
-                icon,
-                color: isSelected
-                    ? AppTheme.primaryColor
-                    : Theme.of(context).textTheme.bodyMedium?.color,
-                size: 22,
-              ),
-              if (!isCollapsed) ...[
-                const SizedBox(width: 16),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    color: isSelected
-                        ? AppTheme.primaryColor
-                        : Theme.of(context).textTheme.bodyMedium?.color,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
-                    fontSize: 14,
-                  ),
+          child: (() {
+            Widget itemContent = Row(
+              mainAxisAlignment: isCollapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected
+                      ? AppTheme.primaryColor
+                      : Theme.of(context).textTheme.bodyMedium?.color,
+                  size: 22,
                 ),
+                if (!isCollapsed) ...[
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        color: isSelected
+                            ? AppTheme.primaryColor
+                            : Theme.of(context).textTheme.bodyMedium?.color,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ],
-            ],
-          ),
+            );
+
+            if (index == 1) {
+              // Jobs index
+              return StreamBuilder<int>(
+                stream: _pendingJobsCountStream,
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  if (count == 0) return itemContent;
+                  return Badge(
+                    label: Text(count.toString()),
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
+                    offset: isCollapsed
+                        ? const Offset(12, -12)
+                        : const Offset(8, -8),
+                    child: itemContent,
+                  );
+                },
+              );
+            }
+            return itemContent;
+          })(),
         ),
       ),
     );
@@ -531,22 +577,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                padding: EdgeInsets.all(isSelected ? 6 : 0),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppTheme.primaryColor.withOpacity(0.15)
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 22,
-                ),
-              ),
+              (() {
+                Widget iconWidget = AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  padding: EdgeInsets.all(isSelected ? 6 : 0),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppTheme.primaryColor.withOpacity(0.15)
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 22,
+                  ),
+                );
+
+                if (index == 1) {
+                  // Jobs item
+                  return StreamBuilder<int>(
+                    stream: _pendingJobsCountStream,
+                    builder: (context, snapshot) {
+                      final count = snapshot.data ?? 0;
+                      if (count == 0) return iconWidget;
+                      return Badge(
+                        label: Text(count.toString()),
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        child: iconWidget,
+                      );
+                    },
+                  );
+                }
+                return iconWidget;
+              })(),
               const SizedBox(height: 2),
               AnimatedOpacity(
                 opacity: isSelected ? 1.0 : 0.0,

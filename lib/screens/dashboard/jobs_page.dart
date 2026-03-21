@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_theme.dart';
 import '../../services/upload_service.dart';
 
@@ -156,6 +158,48 @@ class _JobsPageState extends State<JobsPage> {
     setState(() => _isProcessing = true);
 
     try {
+      // 1. Fetch user's PIN from Firestore
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final String? savedPin = userDoc.data()?['payment_pin'];
+
+      if (savedPin == null) {
+        setState(() => _isProcessing = false);
+        if (mounted) {
+          _showNoPinDialog();
+        }
+        return;
+      }
+
+      // 2. Check for Biometrics
+      final bool biometricEnabled = userDoc.data()?['biometric_enabled'] ?? false;
+      bool authenticated = false;
+
+      if (biometricEnabled) {
+        final LocalAuthentication auth = LocalAuthentication();
+        try {
+          authenticated = await auth.authenticate(
+            localizedReason: 'Authorize payment of MK ${cost.toStringAsFixed(2)}',
+            options: const AuthenticationOptions(
+              stickyAuth: true,
+              biometricOnly: true,
+            ),
+          );
+        } catch (e) {
+          debugPrint('Biometric Error: $e');
+          // If biometric fails (no hardware, etc.), fall back to PIN
+        }
+      }
+
+      // 3. Show PIN confirmation dialog if not authenticated via biometrics
+      if (!authenticated) {
+        final bool? pinCorrect = await _showPinConfirmationDialog(savedPin);
+        if (pinCorrect != true) {
+          setState(() => _isProcessing = false);
+          return;
+        }
+      }
+
+      // 4. Proceed with transaction
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         debugPrint('Starting payment transaction for jobId: $jobId');
         final userDocRef =
@@ -187,7 +231,9 @@ class _JobsPageState extends State<JobsPage> {
         transaction.update(userDocRef, {'balance': currentBalance - cost});
 
         // 2. Update job payment status
-        final String token = (Random().nextInt(8999999) + 1000000).toString();
+        final String token =
+            DateTime.now().millisecondsSinceEpoch.toString().substring(7) +
+                (Random().nextInt(899999) + 100000).toString();
         transaction.update(
             jobDocRef, {'payment_status': 'paid', 'print_token': token});
 
@@ -219,6 +265,7 @@ class _JobsPageState extends State<JobsPage> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isProcessing = false);
         debugPrint('Payment Error: $e');
         String errorMessage = e.toString();
 
@@ -239,7 +286,151 @@ class _JobsPageState extends State<JobsPage> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  void _showNoPinDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Security PIN Required', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Text(
+          'For your security, you must set a 4-digit payment PIN before you can pay for jobs.',
+          style: GoogleFonts.inter(
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+              fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Maybe Later'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to Profile tab or show instructions
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Go to Profile > Account > Set Payment PIN')),
+              );
+            },
+            child: const Text('Go to Profile'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showPinConfirmationDialog(String savedPin) async {
+    final controller = TextEditingController();
+    
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Confirm PIN', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Enter your 4-digit PIN to authorize this payment.',
+              style: GoogleFonts.inter(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              obscureText: true,
+              textAlign: TextAlign.center,
+              autofocus: true,
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 10,
+                color: Theme.of(context).textTheme.titleLarge?.color
+              ),
+              decoration: InputDecoration(
+                counterText: '',
+                filled: true,
+                fillColor: AppTheme.primaryColor.withOpacity(0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (val) {
+                if (val.length == 4) {
+                  if (val == savedPin) {
+                    Navigator.pop(dialogContext, true);
+                  } else {
+                    controller.clear();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Incorrect PIN. Please try again.'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: AppTheme.textMuted)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _previewDocument(String? url) async {
+    debugPrint('--- Preview Document ---');
+    debugPrint('URL: $url');
+
+    if (url == null || url.isEmpty) {
+      debugPrint('Error: URL is null or empty');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No preview available for this document')),
+      );
+      return;
+    }
+
+    final uri = Uri.parse(url);
+    try {
+      final canLaunch = await canLaunchUrl(uri);
+      debugPrint('Can launch URL: $canLaunch');
+
+      if (canLaunch) {
+        debugPrint('Launching URL...');
+        final launched =
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+        debugPrint('Launch status: $launched');
+      } else {
+        debugPrint('Error: Could not launch URL (canLaunchUrl returned false)');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open the document')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Exception during preview: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
@@ -350,121 +541,142 @@ class _JobsPageState extends State<JobsPage> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: _buildHeader(),
-              ),
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: user != null
-                      ? (_selectedStatus == 'All'
-                          ? FirebaseFirestore.instance
-                              .collection('print_jobs')
-                              .where('user_id', isEqualTo: user.uid)
-                              .orderBy('created_at', descending: true)
-                              .snapshots()
-                          : FirebaseFirestore.instance
-                              .collection('print_jobs')
-                              .where('user_id', isEqualTo: user.uid)
-                              .where('print_status',
-                                  isEqualTo: _selectedStatus.toLowerCase())
-                              .orderBy('created_at', descending: true)
-                              .snapshots())
-                      : const Stream.empty(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError)
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    if (snapshot.connectionState == ConnectionState.waiting)
-                      return const Center(child: CircularProgressIndicator());
-
-                    final docs = snapshot.data?.docs ?? [];
-                    if (docs.isEmpty) return _buildEmptyState();
-
-                    return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: docs.length,
-                      itemBuilder: (context, index) {
-                        final data = docs[index].data() as Map<String, dynamic>;
-                        return _buildJobCard(data, docs[index].id);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+          child: StreamBuilder<QuerySnapshot>(
+            stream: user != null
+                ? (_selectedStatus == 'All'
+                    ? FirebaseFirestore.instance
+                        .collection('print_jobs')
+                        .where('user_id', isEqualTo: user.uid)
+                        .orderBy('created_at', descending: true)
+                        .snapshots()
+                    : FirebaseFirestore.instance
+                        .collection('print_jobs')
+                        .where('user_id', isEqualTo: user.uid)
+                        .where('print_status',
+                            isEqualTo: _selectedStatus.toLowerCase())
+                        .orderBy('created_at', descending: true)
+                        .snapshots())
+                : const Stream.empty(),
+            builder: (context, snapshot) {
+              return CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.only(
+                        top: 24.0, left: 24.0, right: 24.0),
+                    sliver: SliverToBoxAdapter(
+                      child: _buildHeader(),
+                    ),
+                  ),
+                  _buildSliverContent(snapshot),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.05),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _selectedStatus == 'All'
-                    ? LucideIcons.printer
-                    : LucideIcons.searchX,
-                size: 80,
-                color: AppTheme.primaryColor.withOpacity(0.2),
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              _selectedStatus == 'All'
-                  ? 'No printing jobs yet'
-                  : 'No matches found',
-              style: GoogleFonts.outfit(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.titleLarge?.color,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _selectedStatus == 'All'
-                  ? 'Ready to print? Select a file and start your first job.'
-                  : 'Try adjusting your filters to find what you\'re looking for.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                color: AppTheme.textMuted,
-                fontSize: 15,
-                height: 1.5,
-              ),
-            ),
-            if (_selectedStatus == 'All') ...[
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: _pickFile,
-                icon: const Icon(LucideIcons.plus, size: 20),
-                label: const Text('Create New Job'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(200, 56),
-                ),
-              ),
-            ],
-          ],
+  Widget _buildSliverContent(AsyncSnapshot<QuerySnapshot> snapshot) {
+    if (snapshot.hasError) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('Error: ${snapshot.error}')),
+      );
+    }
+
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final docs = snapshot.data?.docs ?? [];
+    if (docs.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _buildEmptyState(),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 110),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final data = docs[index].data() as Map<String, dynamic>;
+            return _buildJobCard(data, docs[index].id);
+          },
+          childCount: docs.length,
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _selectedStatus == 'All'
+                  ? LucideIcons.printer
+                  : LucideIcons.searchX,
+              size: 80,
+              color: AppTheme.primaryColor.withOpacity(0.2),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            _selectedStatus == 'All'
+                ? 'No printing jobs yet'
+                : 'No matches found',
+            style: GoogleFonts.outfit(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.titleLarge?.color,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _selectedStatus == 'All'
+                ? 'Ready to print? Select a file and start your first job.'
+                : 'Try adjusting your filters to find what you\'re looking for.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: AppTheme.textMuted,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
+          if (_selectedStatus == 'All') ...[
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: _pickFile,
+              icon: const Icon(LucideIcons.plus, size: 20),
+              label: const Text('Create New Job'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(200, 56),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildJobCard(Map<String, dynamic> data, String jobId) {
     final String status = data['status'] ?? 'pending';
-    final String printStatus = data['print_status'] ?? status;
+    final String printStatus = data['status'] ?? status;
     final String paymentStatus = data['payment_status'] ?? 'pending';
     final String jobName = data['job_name'] ?? 'Untitled Job';
     final DateTime createdAt =
@@ -533,6 +745,8 @@ class _JobsPageState extends State<JobsPage> {
                                     .titleLarge
                                     ?.color,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -541,6 +755,8 @@ class _JobsPageState extends State<JobsPage> {
                                 color: AppTheme.textMuted,
                                 fontSize: 13,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -570,40 +786,68 @@ class _JobsPageState extends State<JobsPage> {
                       ),
                     ],
                   ),
+                  if (data['print_token'] != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: AppTheme.primaryColor.withOpacity(0.1)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(LucideIcons.ticket,
+                                  size: 14,
+                                  color:
+                                      AppTheme.primaryColor.withOpacity(0.6)),
+                              const SizedBox(width: 8),
+                              Text(
+                                'PRINT TOKEN',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.primaryColor.withOpacity(0.6),
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            data['print_token'],
+                            style: GoogleFonts.outfit(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
+                              letterSpacing: 6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 12,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _buildEnhancedStatusBadge(
                         'Print: ${printStatus.toUpperCase()}',
                         _getStatusColor(printStatus),
                         _getStatusIcon(printStatus),
                       ),
-                      const SizedBox(width: 8),
                       _buildEnhancedStatusBadge(
                         'Payment: ${paymentStatus.toUpperCase()}',
                         _getPaymentStatusColor(paymentStatus),
                         _getPaymentStatusIcon(paymentStatus),
                       ),
-                      const Spacer(),
-                      if (data['print_token'] != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: AppTheme.primaryColor.withOpacity(0.3)),
-                          ),
-                          child: Text(
-                            'Token: ${data['print_token']}',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryColor,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        ),
                       if (paymentStatus != 'success' && paymentStatus != 'paid')
                         ElevatedButton.icon(
                           onPressed: _isProcessing
@@ -620,6 +864,24 @@ class _JobsPageState extends State<JobsPage> {
                           label: const Text('Pay Now'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            minimumSize: Size.zero,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                            textStyle: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      if (data['file_url'] != null)
+                        ElevatedButton.icon(
+                          onPressed: () => _previewDocument(data['file_url']),
+                          icon: const Icon(LucideIcons.eye, size: 14),
+                          label: const Text('Preview'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade700,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
@@ -757,7 +1019,7 @@ class _JobsPageState extends State<JobsPage> {
               color: Theme.of(context).textTheme.bodyMedium?.color,
               fontSize: 15),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 10),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(

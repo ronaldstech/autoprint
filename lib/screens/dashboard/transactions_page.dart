@@ -416,7 +416,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 110),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

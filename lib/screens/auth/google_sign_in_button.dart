@@ -57,10 +57,10 @@ class GoogleSignInButton extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Text(
+          Text(
             'Continue with Google',
             style: TextStyle(
-              color: Color(0xFF1E293B),
+              color: Theme.of(context).textTheme.bodyLarge?.color,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
