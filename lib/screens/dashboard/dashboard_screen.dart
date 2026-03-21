@@ -53,8 +53,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             key: ValueKey(_selectedIndex),
                             child: [
                               SummaryPage(
-                                onNavigateToJobs: () => setState(() => _selectedIndex = 1),
-                                onNavigateToWallet: () => setState(() => _selectedIndex = 2),
+                                onNavigateToJobs: () =>
+                                    setState(() => _selectedIndex = 1),
+                                onNavigateToWallet: () =>
+                                    setState(() => _selectedIndex = 2),
                               ),
                               const JobsPage(),
                               const TransactionsPage(),
@@ -81,7 +83,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor.withOpacity(0.8),
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+        border: Border(
+            bottom: BorderSide(
+                color: Theme.of(context).dividerColor.withOpacity(0.1))),
       ),
       child: Center(
         child: ConstrainedBox(
@@ -136,42 +140,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
           items: [
             PopupMenuItem(
               onTap: () {
-                themeNotifier.value = themeNotifier.value == ThemeMode.light 
-                  ? ThemeMode.dark 
-                  : ThemeMode.light;
+                themeNotifier.value = themeNotifier.value == ThemeMode.light
+                    ? ThemeMode.dark
+                    : ThemeMode.light;
               },
               child: Row(
                 children: [
-                   Icon(
-                    themeNotifier.value == ThemeMode.light 
-                      ? LucideIcons.moon 
-                      : LucideIcons.sun, 
-                    size: 20
-                  ),
+                  Icon(
+                      themeNotifier.value == ThemeMode.light
+                          ? LucideIcons.moon
+                          : LucideIcons.sun,
+                      size: 20),
                   const SizedBox(width: 12),
-                  Text(themeNotifier.value == ThemeMode.light 
-                    ? 'Turn on Dark Mode' 
-                    : 'Turn on Light Mode'
-                  ),
+                  Text(themeNotifier.value == ThemeMode.light
+                      ? 'Turn on Dark'
+                      : 'Turn off Dark'),
                 ],
               ),
             ),
             PopupMenuItem(
               onTap: () => setState(() => _selectedIndex = 3),
               child: const Row(
-                children: [Icon(LucideIcons.settings, size: 20), SizedBox(width: 12), Text('Settings')],
+                children: [
+                  Icon(LucideIcons.settings, size: 20),
+                  SizedBox(width: 12),
+                  Text('Settings')
+                ],
               ),
             ),
             PopupMenuItem(
               onTap: () => setState(() => _selectedIndex = 4),
               child: const Row(
-                children: [Icon(LucideIcons.user, size: 20), SizedBox(width: 12), Text('Profile')],
+                children: [
+                  Icon(LucideIcons.user, size: 20),
+                  SizedBox(width: 12),
+                  Text('Profile')
+                ],
               ),
             ),
             PopupMenuItem(
               onTap: () => FirebaseAuth.instance.signOut(),
               child: const Row(
-                children: [Icon(LucideIcons.logOut, size: 20, color: Colors.red), SizedBox(width: 12), Text('Logout', style: TextStyle(color: Colors.red))],
+                children: [
+                  Icon(LucideIcons.logOut, size: 20, color: Colors.red),
+                  SizedBox(width: 12),
+                  Text('Logout', style: TextStyle(color: Colors.red))
+                ],
               ),
             ),
           ],
@@ -189,7 +203,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? Image.network(
                 photoUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => _buildAvatarFallback(displayName),
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildAvatarFallback(displayName),
               )
             : _buildAvatarFallback(displayName),
       ),
@@ -220,24 +235,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Row(
                 children: [
                   Icon(
-                    themeNotifier.value == ThemeMode.light ? LucideIcons.moon : LucideIcons.sun,
+                    themeNotifier.value == ThemeMode.light
+                        ? LucideIcons.moon
+                        : LucideIcons.sun,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
-                  Text(themeNotifier.value == ThemeMode.light ? 'Turn on Dark Mode' : 'Turn on Light Mode'),
+                  Text(themeNotifier.value == ThemeMode.light
+                      ? 'Turn on Dark'
+                      : 'Turn off Dark'),
                 ],
               ),
             ),
             PopupMenuItem(
               onTap: () => setState(() => _selectedIndex = 3),
               child: const Row(
-                children: [Icon(LucideIcons.settings, size: 20), SizedBox(width: 12), Text('Settings')],
+                children: [
+                  Icon(LucideIcons.settings, size: 20),
+                  SizedBox(width: 12),
+                  Text('Settings')
+                ],
               ),
             ),
             PopupMenuItem(
               onTap: () => setState(() => _selectedIndex = 4),
               child: const Row(
-                children: [Icon(LucideIcons.user, size: 20), SizedBox(width: 12), Text('Profile')],
+                children: [
+                  Icon(LucideIcons.user, size: 20),
+                  SizedBox(width: 12),
+                  Text('Profile')
+                ],
               ),
             ),
             PopupMenuItem(
@@ -276,7 +303,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ? Image.network(
                       photoUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _buildAvatarFallback(displayName),
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildAvatarFallback(displayName),
                     )
                   : _buildAvatarFallback(displayName),
             ),
@@ -291,7 +319,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 4),
-            Icon(LucideIcons.chevronDown, size: 12, color: AppTheme.primaryColor.withOpacity(0.7)),
+            Icon(LucideIcons.chevronDown,
+                size: 12, color: AppTheme.primaryColor.withOpacity(0.7)),
           ],
         ),
       ),
@@ -311,7 +340,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildDesktopSidebar(BuildContext context, BoxConstraints constraints) {
+  Widget _buildDesktopSidebar(
+      BuildContext context, BoxConstraints constraints) {
     final bool isCollapsed = constraints.maxWidth < 1100 || _isSidebarCollapsed;
 
     return AnimatedContainer(
@@ -319,7 +349,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       width: isCollapsed ? 88 : 260,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        border: Border(right: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
+        border: Border(
+            right: BorderSide(
+                color: Theme.of(context).dividerColor.withOpacity(0.1))),
       ),
       child: Column(
         children: [
@@ -335,7 +367,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: AppTheme.primaryColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(LucideIcons.printer, color: Colors.white, size: 24),
+                  child: const Icon(LucideIcons.printer,
+                      color: Colors.white, size: 24),
                 ),
                 if (!isCollapsed) ...[
                   const SizedBox(width: 12),
@@ -352,7 +385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 40),
-          
+
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -360,19 +393,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
               itemBuilder: (context, index) {
                 final d = _destinations[index];
                 final isSelected = _selectedIndex == index;
-                
-                return _buildSidebarItem(index, d.icon, d.label, isCollapsed, isSelected);
+
+                return _buildSidebarItem(
+                    index, d.icon, d.label, isCollapsed, isSelected);
               },
             ),
           ),
-          
+
           // --- Collapse Toggle ---
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: IconButton(
-              onPressed: () => setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
+              onPressed: () =>
+                  setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
               icon: Icon(
-                isCollapsed ? LucideIcons.chevronRight : LucideIcons.chevronLeft,
+                isCollapsed
+                    ? LucideIcons.chevronRight
+                    : LucideIcons.chevronLeft,
                 color: Theme.of(context).textTheme.bodySmall?.color,
               ),
             ),
@@ -383,7 +420,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSidebarItem(int index, IconData icon, String label, bool isCollapsed, bool isSelected) {
+  Widget _buildSidebarItem(int index, IconData icon, String label,
+      bool isCollapsed, bool isSelected) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
@@ -393,15 +431,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppTheme.primaryColor.withOpacity(0.08) : Colors.transparent,
+            color: isSelected
+                ? AppTheme.primaryColor.withOpacity(0.08)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
-            mainAxisAlignment: isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
+            mainAxisAlignment: isCollapsed
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
               Icon(
                 icon,
-                color: isSelected ? AppTheme.primaryColor : Theme.of(context).textTheme.bodyMedium?.color,
+                color: isSelected
+                    ? AppTheme.primaryColor
+                    : Theme.of(context).textTheme.bodyMedium?.color,
                 size: 22,
               ),
               if (!isCollapsed) ...[
@@ -409,8 +453,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   label,
                   style: GoogleFonts.inter(
-                    color: isSelected ? AppTheme.primaryColor : Theme.of(context).textTheme.bodyMedium?.color,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected
+                        ? AppTheme.primaryColor
+                        : Theme.of(context).textTheme.bodyMedium?.color,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
@@ -469,9 +516,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildBottomNavItem(int index, IconData icon, String label) {
     final isSelected = _selectedIndex == index;
-    final color = isSelected 
-        ? AppTheme.primaryColor 
-        : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6) ?? Colors.grey;
+    final color = isSelected
+        ? AppTheme.primaryColor
+        : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6) ??
+            Colors.grey;
 
     return Expanded(
       child: GestureDetector(
@@ -488,7 +536,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 curve: Curves.easeOutCubic,
                 padding: EdgeInsets.all(isSelected ? 6 : 0),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryColor.withOpacity(0.15) : Colors.transparent,
+                  color: isSelected
+                      ? AppTheme.primaryColor.withOpacity(0.15)
+                      : Colors.transparent,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
