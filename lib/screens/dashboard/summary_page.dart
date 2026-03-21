@@ -6,7 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
 
 class SummaryPage extends StatelessWidget {
-  const SummaryPage({super.key});
+  final VoidCallback? onNavigateToJobs;
+  final VoidCallback? onNavigateToWallet;
+
+  const SummaryPage({
+    super.key,
+    this.onNavigateToJobs,
+    this.onNavigateToWallet,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -119,39 +126,61 @@ class SummaryPage extends StatelessWidget {
         final data = snapshot.data?.data() as Map<String, dynamic>?;
         final balance = data?['balance'] ?? 0;
         
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 500 ? 2 : 1);
-            return GridView.count(
-              crossAxisCount: crossAxisCount,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 20,
-              crossAxisSpacing: 20,
-              childAspectRatio: 2.2,
-              children: [
-                _buildStatCard(
-                  context,
-                  'Account Balance',
-                  'K $balance',
-                  LucideIcons.wallet,
-                  AppTheme.primaryColor,
-                ),
-                _buildStatCard(
-                  context,
-                  'Active Jobs',
-                  '3',
-                  LucideIcons.activity,
-                  AppTheme.secondaryColor,
-                ),
-                _buildStatCard(
-                  context,
-                  'Completed',
-                  '128',
-                  LucideIcons.checkCircle,
-                  const Color(0xFF8B5CF6),
-                ),
-              ],
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('print_jobs')
+              .where('user_id', isEqualTo: user.uid)
+              .snapshots(),
+          builder: (context, jobsSnapshot) {
+            int activeJobs = 0;
+            int completedJobs = 0;
+            
+            if (jobsSnapshot.hasData) {
+              for (var doc in jobsSnapshot.data!.docs) {
+                final status = (doc.data() as Map<String, dynamic>)['print_status'] ?? 'pending';
+                if (status == 'completed') {
+                  completedJobs++;
+                } else if (status == 'pending' || status == 'processing') {
+                  activeJobs++;
+                }
+              }
+            }
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 500 ? 2 : 1);
+                return GridView.count(
+                  crossAxisCount: crossAxisCount,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 20,
+                  crossAxisSpacing: 20,
+                  childAspectRatio: 2.2,
+                  children: [
+                    _buildStatCard(
+                      context,
+                      'Account Balance',
+                      'K $balance',
+                      LucideIcons.wallet,
+                      AppTheme.primaryColor,
+                    ),
+                    _buildStatCard(
+                      context,
+                      'Active Jobs',
+                      activeJobs.toString(),
+                      LucideIcons.activity,
+                      AppTheme.secondaryColor,
+                    ),
+                    _buildStatCard(
+                      context,
+                      'Completed',
+                      completedJobs.toString(),
+                      LucideIcons.checkCircle,
+                      const Color(0xFF8B5CF6),
+                    ),
+                  ],
+                );
+              },
             );
           },
         );
@@ -161,46 +190,78 @@ class SummaryPage extends StatelessWidget {
 
   Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+        border: Border.all(color: color.withOpacity(0.20)),
         boxShadow: AppTheme.softShadow,
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 13),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: GoogleFonts.outfit(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.titleLarge?.color,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        child: Stack(
+          children: [
+            // Subtle color wash background
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withOpacity(0.14),
+                      color.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+            // Big background icon
+            Positioned(
+              right: -14,
+              top: -14,
+              child: Icon(
+                icon,
+                size: 90,
+                color: color.withOpacity(0.08),
+              ),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: color, size: 18),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    value,
+                    style: GoogleFonts.outfit(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -218,7 +279,7 @@ class SummaryPage extends StatelessWidget {
               'New Print Job',
               LucideIcons.plusCircle,
               AppTheme.primaryColor,
-              onTap: () {},
+              onTap: onNavigateToJobs ?? () {},
             ),
             const SizedBox(width: 16),
             _buildActionButton(
@@ -226,7 +287,7 @@ class SummaryPage extends StatelessWidget {
               'Top Up Wallet',
               LucideIcons.creditCard,
               AppTheme.secondaryColor,
-              onTap: () {},
+              onTap: onNavigateToWallet ?? () {},
             ),
           ],
         ),
@@ -265,6 +326,7 @@ class SummaryPage extends StatelessWidget {
   }
 
   Widget _buildRecentActivity(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -289,34 +351,74 @@ class SummaryPage extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppTheme.borderRadius),
             border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
           ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 3,
-            separatorBuilder: (context, index) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    borderRadius: BorderRadius.circular(10),
+          child: StreamBuilder<QuerySnapshot>(
+            stream: user != null
+                ? FirebaseFirestore.instance
+                    .collection('print_jobs')
+                    .where('user_id', isEqualTo: user.uid)
+                    .orderBy('created_at', descending: true)
+                    .limit(5)
+                    .snapshots()
+                : const Stream.empty(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      'No recent print jobs found',
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
+                    ),
                   ),
-                  child: const Icon(LucideIcons.fileText, color: AppTheme.primaryColor, size: 20),
-                ),
-                title: Text(
-                  'Document_${index + 1}.pdf',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                ),
-                subtitle: Text(
-                  'ID: #PRN-102${index + 45} • 12 pages',
-                  style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
-                ),
-                trailing: _buildStatusChip(index == 0 ? 'Processing' : 'Completed'),
+                );
+              }
+
+              final docs = snapshot.data!.docs;
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: docs.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  final fileName = data['file_name'] ?? 'Document.pdf';
+                  final pages = data['page_count'] ?? 1;
+                  final jobId = docs[index].id;
+                  final displayId = jobId.length > 6 ? jobId.substring(0, 6) : jobId;
+                  final printStatus = data['print_status'] ?? data['status'] ?? 'pending';
+
+                  String formattedStatus = printStatus;
+                  if (formattedStatus.isNotEmpty) {
+                    formattedStatus = formattedStatus[0].toUpperCase() + formattedStatus.substring(1).toLowerCase();
+                  }
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(LucideIcons.fileText, color: AppTheme.primaryColor, size: 20),
+                    ),
+                    title: Text(
+                      fileName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'ID: #PRN-$displayId • $pages pages',
+                      style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+                    ),
+                    trailing: _buildStatusChip(formattedStatus),
+                  );
+                },
               );
             },
           ),
@@ -327,8 +429,8 @@ class SummaryPage extends StatelessWidget {
 
   Widget _buildStatusChip(String status) {
     final isCompleted = status == 'Completed';
-    final emeraldColor = const Color(0xFF10B981);
-    final amberColor = const Color(0xFFF59E0B);
+    const emeraldColor = Color(0xFF10B981);
+    const amberColor = Color(0xFFF59E0B);
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

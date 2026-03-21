@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -21,14 +22,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   bool _isSidebarCollapsed = false;
 
-  final List<Widget> _pages = [
-    const SummaryPage(),
-    const JobsPage(),
-    const TransactionsPage(),
-    const SettingsPage(),
-    const ProfilePage(),
-  ];
-
   final List<({IconData icon, String label})> _destinations = [
     (icon: LucideIcons.layoutDashboard, label: 'Dashboard'),
     (icon: LucideIcons.files, label: 'Jobs'),
@@ -45,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         return SelectionArea(
           child: Scaffold(
+            extendBody: true,
             body: Row(
               children: [
                 if (!isMobile) _buildDesktopSidebar(context, constraints),
@@ -57,7 +51,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           duration: const Duration(milliseconds: 300),
                           child: KeyedSubtree(
                             key: ValueKey(_selectedIndex),
-                            child: _pages[_selectedIndex],
+                            child: [
+                              SummaryPage(
+                                onNavigateToJobs: () => setState(() => _selectedIndex = 1),
+                                onNavigateToWallet: () => setState(() => _selectedIndex = 2),
+                              ),
+                              const JobsPage(),
+                              const TransactionsPage(),
+                              const SettingsPage(),
+                              const ProfilePage(),
+                            ][_selectedIndex],
                           ),
                         ),
                       ),
@@ -66,7 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            bottomNavigationBar: isMobile ? _buildBottomNav() : null,
+            bottomNavigationBar: isMobile ? _buildPremiumBottomNav() : null,
           ),
         );
       },
@@ -89,23 +92,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               bottom: false,
               child: Row(
                 children: [
+                  // App logo
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Text(
                     _destinations[_selectedIndex].label,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const Spacer(),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(LucideIcons.bell, color: AppTheme.primaryColor, size: 20),
-                      onPressed: () {},
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildProfileAvatar(),
+                  _buildProfileChip(),
                 ],
               ),
             ),
@@ -184,6 +192,108 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 errorBuilder: (context, error, stackTrace) => _buildAvatarFallback(displayName),
               )
             : _buildAvatarFallback(displayName),
+      ),
+    );
+  }
+
+  Widget _buildProfileChip() {
+    final user = FirebaseAuth.instance.currentUser;
+    final photoUrl = user?.photoURL;
+    final displayName = user?.displayName ?? 'User';
+    // First 3 letters of the display name, capitalised
+    final shortName = displayName.length > 3
+        ? displayName.substring(0, 3).toUpperCase()
+        : displayName.toUpperCase();
+
+    return InkWell(
+      onTap: () {
+        showMenu(
+          context: context,
+          position: const RelativeRect.fromLTRB(100, 80, 24, 0),
+          items: [
+            PopupMenuItem(
+              onTap: () {
+                themeNotifier.value = themeNotifier.value == ThemeMode.light
+                    ? ThemeMode.dark
+                    : ThemeMode.light;
+              },
+              child: Row(
+                children: [
+                  Icon(
+                    themeNotifier.value == ThemeMode.light ? LucideIcons.moon : LucideIcons.sun,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(themeNotifier.value == ThemeMode.light ? 'Turn on Dark Mode' : 'Turn on Light Mode'),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              onTap: () => setState(() => _selectedIndex = 3),
+              child: const Row(
+                children: [Icon(LucideIcons.settings, size: 20), SizedBox(width: 12), Text('Settings')],
+              ),
+            ),
+            PopupMenuItem(
+              onTap: () => setState(() => _selectedIndex = 4),
+              child: const Row(
+                children: [Icon(LucideIcons.user, size: 20), SizedBox(width: 12), Text('Profile')],
+              ),
+            ),
+            PopupMenuItem(
+              onTap: () => FirebaseAuth.instance.signOut(),
+              child: const Row(
+                children: [
+                  Icon(LucideIcons.logOut, size: 20, color: Colors.red),
+                  SizedBox(width: 12),
+                  Text('Logout', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.15)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: photoUrl != null
+                  ? Image.network(
+                      photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => _buildAvatarFallback(displayName),
+                    )
+                  : _buildAvatarFallback(displayName),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              shortName,
+              style: GoogleFonts.outfit(
+                color: AppTheme.primaryColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(LucideIcons.chevronDown, size: 12, color: AppTheme.primaryColor.withOpacity(0.7)),
+          ],
+        ),
       ),
     );
   }
@@ -312,15 +422,98 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildBottomNav() {
-    return NavigationBar(
-      selectedIndex: _selectedIndex > 2 ? 0 : _selectedIndex,
-      onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-      destinations: const [
-        NavigationDestination(icon: Icon(LucideIcons.layoutDashboard), label: 'Home'),
-        NavigationDestination(icon: Icon(LucideIcons.plusCircle), label: 'Jobs'),
-        NavigationDestination(icon: Icon(LucideIcons.wallet), label: 'Wallet'),
-      ],
+  Widget _buildPremiumBottomNav() {
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        height: 70,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(35),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryColor.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(35),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor.withOpacity(0.85),
+                borderRadius: BorderRadius.circular(35),
+                border: Border.all(
+                  color: Theme.of(context).dividerColor.withOpacity(0.1),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildBottomNavItem(0, LucideIcons.layoutDashboard, 'Home'),
+                  _buildBottomNavItem(1, LucideIcons.plusCircle, 'Jobs'),
+                  _buildBottomNavItem(2, LucideIcons.wallet, 'Wallet'),
+                  _buildBottomNavItem(4, LucideIcons.user, 'Profile'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavItem(int index, IconData icon, String label) {
+    final isSelected = _selectedIndex == index;
+    final color = isSelected 
+        ? AppTheme.primaryColor 
+        : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6) ?? Colors.grey;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.all(isSelected ? 6 : 0),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.primaryColor.withOpacity(0.15) : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(height: 2),
+              AnimatedOpacity(
+                opacity: isSelected ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.primaryColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

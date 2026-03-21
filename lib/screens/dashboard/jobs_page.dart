@@ -187,7 +187,7 @@ class _JobsPageState extends State<JobsPage> {
         transaction.update(userDocRef, {'balance': currentBalance - cost});
 
         // 2. Update job payment status
-        final String token = (Random().nextInt(899999) + 100000).toString();
+        final String token = (Random().nextInt(8999999) + 1000000).toString();
         transaction.update(
             jobDocRef, {'payment_status': 'paid', 'print_token': token});
 
@@ -337,12 +337,15 @@ class _JobsPageState extends State<JobsPage> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showUploadModal,
-        icon: const Icon(LucideIcons.plus),
-        label: const Text('New Job'),
-        backgroundColor: AppTheme.primaryColor,
-        elevation: 4,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90),
+        child: FloatingActionButton.extended(
+          onPressed: _showUploadModal,
+          icon: const Icon(LucideIcons.plus),
+          label: const Text('New Job'),
+          backgroundColor: AppTheme.primaryColor,
+          elevation: 4,
+        ),
       ),
       body: Center(
         child: ConstrainedBox(
