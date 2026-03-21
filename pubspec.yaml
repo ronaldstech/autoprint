@@ -18,7 +18,12 @@ dependencies:
   syncfusion_flutter_pdf: ^23.1.43
   intl: ^0.18.1
   lucide_icons: ^0.257.0
+  google_sign_in: ^6.2.1
+  google_sign_in_web: ^0.12.0
+  google_sign_in_platform_interface: ^2.5.0
   cupertino_icons: ^1.0.8
+  http: ^1.2.2
+
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +34,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
+    - assets/images/google_logo.png

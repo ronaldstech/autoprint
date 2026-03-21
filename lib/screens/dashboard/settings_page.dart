@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -9,29 +10,34 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 32),
-            _buildSettingsCategory(context, 'General', [
-              _buildSettingsItem(context, LucideIcons.palette, 'Theme Mode', 'Light / Dark'),
-              _buildSettingsItem(context, LucideIcons.bell, 'Notifications', 'Enabled'),
-              _buildSettingsItem(context, LucideIcons.globe, 'Language', 'English'),
-            ]),
-            const SizedBox(height: 32),
-            _buildSettingsCategory(context, 'Privacy & Security', [
-              _buildSettingsItem(context, LucideIcons.shield, 'Security', 'Password & Biometrics'),
-              _buildSettingsItem(context, LucideIcons.eye, 'Privacy Policy', ''),
-            ]),
-            const SizedBox(height: 32),
-            _buildSettingsCategory(context, 'Support', [
-              _buildSettingsItem(context, LucideIcons.helpCircle, 'Help & Support', ''),
-              _buildSettingsItem(context, LucideIcons.info, 'About AutoPrint', 'v1.0.0'),
-            ]),
-          ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 32),
+                _buildSettingsCategory(context, 'General', [
+                  _buildSettingsItem(context, LucideIcons.palette, 'Theme Mode', 'Light / Dark'),
+                  _buildSettingsItem(context, LucideIcons.bell, 'Notifications', 'Enabled'),
+                  _buildSettingsItem(context, LucideIcons.globe, 'Language', 'English'),
+                ]),
+                const SizedBox(height: 32),
+                _buildSettingsCategory(context, 'Privacy & Security', [
+                  _buildSettingsItem(context, LucideIcons.shield, 'Security', 'Password & Biometrics'),
+                  _buildSettingsItem(context, LucideIcons.eye, 'Privacy Policy', ''),
+                ]),
+                const SizedBox(height: 32),
+                _buildSettingsCategory(context, 'Support', [
+                  _buildSettingsItem(context, LucideIcons.helpCircle, 'Help & Support', ''),
+                  _buildSettingsItem(context, LucideIcons.info, 'About AutoPrint', 'v1.0.0'),
+                ]),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -43,15 +49,16 @@ class SettingsPage extends StatelessWidget {
       children: [
         Text(
           'Settings',
-          style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: 28,
-                color: AppTheme.primaryColor,
-              ),
+          style: GoogleFonts.outfit(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.headlineMedium?.color,
+          ),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Manage your preferences and app configurations.',
-          style: TextStyle(color: Color(0xFF64748B), fontSize: 16),
+          style: GoogleFonts.inter(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 15),
         ),
       ],
     );
@@ -65,15 +72,21 @@ class SettingsPage extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
             title.toUpperCase(),
-            style: const TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF64748B),
+              color: Theme.of(context).textTheme.bodySmall?.color,
               letterSpacing: 1.2,
             ),
           ),
         ),
-        Card(
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+            border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+            boxShadow: AppTheme.softShadow,
+          ),
           child: Column(
             children: items,
           ),
@@ -94,9 +107,9 @@ class SettingsPage extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: GoogleFonts.inter(
           fontWeight: FontWeight.w600,
-          color: AppTheme.textColor,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
           fontSize: 15,
         ),
       ),
@@ -106,14 +119,14 @@ class SettingsPage extends StatelessWidget {
           if (value.isNotEmpty)
             Text(
               value,
-              style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              style: GoogleFonts.inter(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 13),
             ),
           const SizedBox(width: 8),
-          const Icon(LucideIcons.chevronRight, size: 16, color: Color(0xFFE2E8F0)),
+          Icon(LucideIcons.chevronRight, size: 16, color: AppTheme.textMuted.withOpacity(0.5)),
         ],
       ),
       onTap: () {},
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.borderRadius)),
     );
   }
 }
