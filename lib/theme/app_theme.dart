@@ -159,7 +159,7 @@ class AppTheme {
         prefixIconColor: textSecondary,
       ),
 
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
@@ -257,7 +257,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(borderRadius), borderSide: const BorderSide(color: primaryColor, width: 2)),
       ),
 
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(borderRadiusLarge), side: const BorderSide(color: darkBorder)),

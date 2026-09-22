@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 class UploadService {
   // TODO: Replace with the actual endpoint provided by the user
   static const String _uploadEndpoint =
-      'https://unimarket-mw.com/autoprint/upload_document.php';
+      'https://lynxtechmedia.com/ronaldstech/autoprint/upload_document.php';
 
   /// Uploads a file to the external endpoint and returns the download URL.
   static Future<String> uploadFile({

@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import '../../theme/app_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,7 +24,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   String _processingMessage = "Processing...";
 
   // USER: Update this with your actual backend URL
-  static const String _backendBaseUrl = "https://unimarket-mw.com/autoprint";
+  static const String _backendBaseUrl = "https://lynxtechmedia.com/ronaldstech/autoprint";
 
   @override
   void dispose() {

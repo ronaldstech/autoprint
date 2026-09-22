@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:iconsax/iconsax.dart';
 import 'signup_screen.dart';
 import 'google_sign_in_button.dart';
 import '../../theme/app_theme.dart';
@@ -17,6 +18,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _googleSignIn = GoogleSignIn();
   bool _isLoading = false;
+  bool _showPassword = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -145,220 +154,132 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isWide = MediaQuery.sizeOf(context).width >= 820;
+
     return Scaffold(
-      body: SelectionArea(
-        child: Stack(
-          children: [
-            // --- Premium Background Gradient ---
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: Theme.of(context).brightness == Brightness.dark
-                      ? [
-                          const Color(0xFF0F172A),
-                          const Color(0xFF1E293B),
-                          const Color(0xFF0F172A),
-                        ]
-                      : [
-                          AppTheme.primaryLight,
-                          Colors.white,
-                          AppTheme.primaryLight.withOpacity(0.5),
-                        ],
-                ),
-              ),
-            ),
-
-            // --- Decorative Blobs ---
-            Positioned(
-              top: -100,
-              right: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(
-                      Theme.of(context).brightness == Brightness.dark
-                          ? 0.1
-                          : 0.05),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 450),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // --- Logo Section ---
-                      Hero(
-                        tag: 'logo',
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: AppTheme.softShadow,
-                          ),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            height: 60,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.print_rounded,
-                              color: AppTheme.primaryColor,
-                              size: 40,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // --- Main Card ---
-                      Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
-                          side: BorderSide(
-                              color: Theme.of(context)
-                                  .dividerColor
-                                  .withOpacity(0.1),
-                              width: 2),
-                        ),
-                        color: Theme.of(context).cardColor.withOpacity(0.8),
-                        child: LayoutBuilder(builder: (context, constraints) {
-                          final isSmall =
-                              MediaQuery.of(context).size.width < 600;
-                          return Padding(
-                            padding: EdgeInsets.all(isSmall ? 24.0 : 40.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  'Welcome Back',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .displayLarge
-                                      ?.copyWith(
-                                        fontSize: 28,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Sign in to continue to AutoPrint',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 15),
-                                TextField(
-                                  controller: _emailController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Email Address',
-                                    prefixIcon: Icon(Icons.email_outlined),
-                                    hintText: 'name@example.com',
-                                  ),
-                                  keyboardType: TextInputType.emailAddress,
-                                ),
-                                const SizedBox(height: 10),
-                                TextField(
-                                  controller: _passwordController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Password',
-                                    prefixIcon:
-                                        Icon(Icons.lock_outline_rounded),
-                                  ),
-                                  obscureText: true,
-                                ),
-                                const SizedBox(height: 12),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: _isLoading ? null : _resetPassword,
-                                    style: TextButton.styleFrom(
-                                        foregroundColor: Colors.red),
-                                    child: const Text('Forgot password?'),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                ElevatedButton(
-                                  onPressed: _isLoading ? null : _signIn,
-                                  child: _isLoading
-                                      ? const SizedBox(
-                                          height: 24,
-                                          width: 24,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Text('Sign In'),
-                                ),
-                                const SizedBox(height: 15),
-                                const Row(
-                                  children: [
-                                    Expanded(child: Divider()),
-                                    Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(horizontal: 16),
-                                      child: Text('OR',
-                                          style: TextStyle(
-                                              color: AppTheme.textMuted)),
-                                    ),
-                                    Expanded(child: Divider()),
-                                  ],
-                                ),
-                                const SizedBox(height: 15),
-                                GoogleSignInButton(
-                                  googleSignIn: _googleSignIn,
-                                  onPressed:
-                                      _isLoading ? null : _signInWithGoogle,
-                                  isLoading: _isLoading,
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // --- Footer ---
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Don't have an account?",
-                            style: TextStyle(
-                              color:
-                                  Theme.of(context).textTheme.bodyMedium?.color,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => const SignUpScreen()),
-                              );
-                            },
-                            child: const Text(
-                              'Create Account',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? const [Color(0xFF0B1020), Color(0xFF151D38)]
+                : const [Color(0xFFF4F6FF), Colors.white],
+          ),
         ),
+        child: SafeArea(
+          child: SelectionArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(isWide ? 48 : 20),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1040),
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(child: _buildWelcomePanel(theme)),
+                            const SizedBox(width: 56),
+                            Expanded(child: _buildLoginCard(theme)),
+                          ],
+                        )
+                      : _buildLoginCard(theme),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomePanel(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBrandMark(),
+          const SizedBox(height: 42),
+          Text('Your print business,\nbeautifully organized.', style: theme.textTheme.displayMedium?.copyWith(fontSize: 42, height: 1.08)),
+          const SizedBox(height: 18),
+          Text('Manage jobs, payments, and customers from one calm, powerful workspace built for getting work done.', style: theme.textTheme.bodyLarge?.copyWith(height: 1.6)),
+          const SizedBox(height: 30),
+          _buildBenefit(Iconsax.flash_1, 'Move from quote to print faster'),
+          _buildBenefit(Iconsax.chart_2, 'See your business clearly at a glance'),
+          _buildBenefit(Iconsax.shield_tick, 'Keep every customer detail protected'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBenefit(IconData icon, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(children: [
+        Container(padding: const EdgeInsets.all(9), decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(12)), child: Icon(icon, size: 18, color: AppTheme.primaryColor)),
+        const SizedBox(width: 12),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+
+  Widget _buildBrandMark() {
+    return Row(children: [
+      Hero(
+        tag: 'logo',
+        child: Container(
+          height: 60,
+          width: 60,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(20), boxShadow: AppTheme.premiumShadow),
+          child: Image.asset('assets/images/logo.png', errorBuilder: (context, error, stackTrace) => const Icon(Iconsax.printer, color: AppTheme.primaryColor, size: 32)),
+        ),
+      ),
+      const SizedBox(width: 14),
+      const Text('AutoPrint', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+    ]);
+  }
+
+  Widget _buildLoginCard(ThemeData theme) {
+    return Card(
+      elevation: 0,
+      color: theme.cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28), side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1))),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          if (MediaQuery.sizeOf(context).width < 820) ...[
+            Center(child: _buildBrandMark()),
+            const SizedBox(height: 28),
+          ],
+          Text('Welcome back', style: theme.textTheme.headlineMedium),
+          const SizedBox(height: 8),
+          Text('Sign in to continue to your AutoPrint workspace.', style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 28),
+          TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email address', hintText: 'name@example.com', prefixIcon: Icon(Iconsax.sms, size: 20))),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            obscureText: !_showPassword,
+            decoration: InputDecoration(labelText: 'Password', hintText: 'Enter your password', prefixIcon: const Icon(Iconsax.lock_1, size: 20), suffixIcon: IconButton(onPressed: () => setState(() => _showPassword = !_showPassword), icon: Icon(_showPassword ? Iconsax.eye_slash : Iconsax.eye), tooltip: _showPassword ? 'Hide password' : 'Show password')),
+          ),
+          Align(alignment: Alignment.centerRight, child: TextButton(onPressed: _isLoading ? null : _resetPassword, child: const Text('Forgot password?'))),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: _isLoading ? null : _signIn,
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+            child: _isLoading ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('Sign in'), SizedBox(width: 10), Icon(Iconsax.arrow_right_3, size: 18)]),
+          ),
+          const SizedBox(height: 22),
+          Row(children: [Expanded(child: Divider(color: theme.dividerColor)), Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Text('OR CONTINUE WITH', style: theme.textTheme.labelSmall?.copyWith(letterSpacing: 0.8))), Expanded(child: Divider(color: theme.dividerColor))]),
+          const SizedBox(height: 18),
+          GoogleSignInButton(googleSignIn: _googleSignIn, onPressed: _isLoading ? null : _signInWithGoogle, isLoading: _isLoading),
+          const SizedBox(height: 20),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('New to AutoPrint?', style: theme.textTheme.bodyMedium), TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignUpScreen())), child: const Text('Create account'))]),
+        ]),
       ),
     );
   }
